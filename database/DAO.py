@@ -321,7 +321,7 @@ class DAO():
         cursor.execute(query, (year,))
         res = []
         for row in cursor.fetchall():
-             res.append(Pilot(**row))
+             res.append(Pilot(dizionario={},**row)) #PER ESAME
         cursor.close()
         conn.close()
         return res
