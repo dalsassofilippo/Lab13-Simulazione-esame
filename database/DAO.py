@@ -441,4 +441,79 @@ GROUP BY a.constructorId, b.constructorId;"""
         conn.close()
         return res
 
+nodi="""SELECT DISTINCT c.*
+FROM circuits c
+JOIN races r ON c.circuitId = r.circuitId
+WHERE r.year BETWEEN @annoMin AND @annoMax;"""
+
+archi="""SELECT r.year, res.driverId, res.position
+FROM races r
+JOIN results res ON r.raceId = res.raceId
+WHERE r.circuitId = @circuitId
+  AND r.year BETWEEN @annoMin AND @annoMax
+  AND res.position IS NOT NULL
+ORDER BY r.year;"""
+
+@dataclass
+class Piazzamento:
+    driverId: int
+    position: int
+
+@dataclass
+class Circuito:
+    circuitId: int
+    name: str
+    location: str
+    country: str
+    ...
+    risultati_per_anno: dict[int, list[Piazzamento]]
+
+
+"""🔗 C) Query per gli archi tra circuiti
+Step 1: trova le coppie di circuiti attivi nello stesso anno
+sql
+
+WITH circuiti_attivi AS (
+  SELECT DISTINCT circuitId, year
+  FROM races
+  WHERE year BETWEEN @annoMin AND @annoMax
+)
+SELECT ca1.circuitId AS c1, ca2.circuitId AS c2, ca1.year
+FROM circuiti_attivi ca1
+JOIN circuiti_attivi ca2 
+  ON ca1.year = ca2.year AND ca1.circuitId < ca2.circuitId
+Step 2: calcola il peso dell’arco (piloti classificati nei 2 circuiti, per ogni anno in comune)
+sql
+
+WITH gare_finite AS (
+  SELECT r.circuitId, r.year, COUNT(DISTINCT res.driverId) AS piloti_classificati
+  FROM races r
+  JOIN results res ON r.raceId = res.raceId
+  WHERE r.year BETWEEN @annoMin AND @annoMax
+    AND res.position IS NOT NULL
+  GROUP BY r.circuitId, r.year
+),
+coppie_anni_comuni AS (
+  SELECT g1.circuitId AS c1, g2.circuitId AS c2, g1.year
+  FROM gare_finite g1
+  JOIN gare_finite g2
+    ON g1.year = g2.year AND g1.circuitId < g2.circuitId
+)
+SELECT 
+  c1, c2,
+  SUM(g1.piloti_classificati + g2.piloti_classificati) AS peso
+FROM coppie_anni_comuni c
+JOIN gare_finite g1 ON c.c1 = g1.circuitId AND c.year = g1.year
+JOIN gare_finite g2 ON c.c2 = g2.circuitId AND c.year = g2.year
+GROUP BY c1, c2;
+
+🧠 In Python: struttura arco
+python
+Copia codice
+@dataclass
+class ArcoCircuiti:
+    circuito1: int
+    circuito2: int
+    peso: int"""
+
 
