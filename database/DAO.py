@@ -446,13 +446,21 @@ FROM circuits c
 JOIN races r ON c.circuitId = r.circuitId
 WHERE r.year BETWEEN @annoMin AND @annoMax;"""
 
-archi="""SELECT r.year, res.driverId, res.position
+diz="""SELECT r.year, res.driverId, res.position
 FROM races r
 JOIN results res ON r.raceId = res.raceId
 WHERE r.circuitId = @circuitId
   AND r.year BETWEEN @annoMin AND @annoMax
   AND res.position IS NOT NULL
 ORDER BY r.year;"""
+
+archi="""select r.circuitId, r2.circuitld
+from races r, races r2, results r3, results r4
+where r.circuitId<r2.circuitId and r4.raceld=r.raceld 
+and r3.raceld=r2.raceld 
+and r2.`year`<=2016 and r2.`year`>=2010 
+and r.`year`<=2016 and r.`year`>=2010 
+group by r.circuitId, r2.circuitId"""
 
 @dataclass
 class Piazzamento:
